@@ -31,6 +31,30 @@ const client = new MongoClient(uri, {
     }
 });
 
+//middleweres
+const logger = (req,res,next) => {
+  console.log('called',req.host,req.originalUrl)
+  next()
+}
+const verifyToken = (req,res,next) => {
+  const token=req.cookies?.token
+  console.log('---------->>>>',token)
+  if(!token){
+    res.status(401).send({message:'unauthorized'})
+  }
+  jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
+    if(err){
+      return res.status(401).send({message:'unauthorized'})
+    }
+    console.log(decoded)
+    req.user=decoded
+    next()
+  })
+  
+}
+
+
+
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -43,7 +67,7 @@ async function run() {
         const CollectionServicesOrder = database.collection("order");
 
         //auth related
-        app.post('/jwt', async (req, res) => {
+        app.post('/jwt',logger, async (req, res) => {
             const user = req.body
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
             res.cookie('token',token,{httpOnly:true,secure:false}).send({success:true})
@@ -52,8 +76,9 @@ async function run() {
 
 
         // Services
-        app.get('/services', async (req, res) => {
-            console.log('--------->>', req.cookies.token)
+        app.get('/services',logger,verifyToken, async (req, res) => {
+            // console.log('--------->>', req.cookies.token)
+            console.log('from in the valid token',req.user.email)
             const services = await databaseCollection.find().toArray();
             res.json(services)
         })
