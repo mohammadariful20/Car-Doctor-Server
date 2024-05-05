@@ -9,7 +9,10 @@ const app = express()
 const port = process.env.PORT || 5000
 
 //midelwere
-app.use(cors())
+app.use(cors({
+    origin: ['http://localhost:5137'],
+    credentials: true,
+}))
 app.use(express.json())
 
 //genarate random serrite
