@@ -10,10 +10,11 @@ const port = process.env.PORT || 5000
 
 //midelwere
 app.use(cors({
-    origin: ['http://localhost:5137'],
-    credentials: true,
+    origin: 'http://localhost:5173',
+    credentials: true
 }))
 app.use(express.json())
+app.use(cookieParser())
 
 //genarate random serrite
 //require('crypto').randomBytes(64).toString('hex')
@@ -37,45 +38,40 @@ async function run() {
         // Send a ping to confirm a successful connection
 
         // Connect to the "car-doctorDB" database and access its "daatabaseCollection" collection
-        const database=client.db("car-doctorDB")
-        const databaseCollection =database.collection("services");
+        const database = client.db("car-doctorDB")
+        const databaseCollection = database.collection("services");
         const CollectionServicesOrder = database.collection("order");
 
         //auth related
-        app.post('/jwt',async(req,res)=>{
-            const user=req.body
-            const token=jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1h'})
-            console.log(user)
-            res
-            .cookie('token',token,{
-                httpOnly:true,
-                secure:false,
-                sameSite:'none'
-            })
-            .send({success:true})
+        app.post('/jwt', async (req, res) => {
+            const user = req.body
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.cookie('token',token,{httpOnly:true,secure:false}).send({success:true})
+            
         })
 
 
         // Services
         app.get('/services', async (req, res) => {
+            console.log('--------->>', req.cookies.token)
             const services = await databaseCollection.find().toArray();
             res.json(services)
         })
-        app.get('/orderreviews',async(req,res)=>{
-            const result=await CollectionServicesOrder.find().toArray();
+        app.get('/orderreviews', async (req, res) => {
+            const result = await CollectionServicesOrder.find().toArray();
             res.send(result)
         })
         app.get('/services/:id', async (req, res) => {
             const services = await databaseCollection.findOne({ _id: new ObjectId(req.params.id) });
             res.json(services)
         })
-        
+
         app.post('/services', async (req, res) => {
             const services = await databaseCollection.insertOne(req.body);
             res.json(services)
         })
-        app.post('/order',async(req,res)=>{
-            const result=await CollectionServicesOrder.insertOne(req.body)
+        app.post('/order', async (req, res) => {
+            const result = await CollectionServicesOrder.insertOne(req.body)
             res.json(result)
         })
 
@@ -88,11 +84,11 @@ async function run() {
             const services = await databaseCollection.deleteOne({ _id: new ObjectId(req.params.id) });
             res.json(services)
         })
-        app.delete('/orderdelete/:id',async(req,res)=>{
-            const result=await CollectionServicesOrder.deleteOne({_id:new ObjectId(req.params.id)})
+        app.delete('/orderdelete/:id', async (req, res) => {
+            const result = await CollectionServicesOrder.deleteOne({ _id: new ObjectId(req.params.id) })
             res.json(result)
         })
-       
+
 
 
         await client.db("admin").command({ ping: 1 });
