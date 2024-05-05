@@ -32,25 +32,23 @@ const client = new MongoClient(uri, {
 });
 
 //middleweres
-const logger = (req,res,next) => {
-  console.log('called',req.host,req.originalUrl)
-  next()
-}
-const verifyToken = (req,res,next) => {
-  const token=req.cookies?.token
-  console.log('---------->>>>',token)
-  if(!token){
-    res.status(401).send({message:'unauthorized'})
-  }
-  jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
-    if(err){
-      return res.status(401).send({message:'unauthorized'})
-    }
-    console.log(decoded)
-    req.user=decoded
+const logger = (req, res, next) => {
+    console.log('called', req.host, req.originalUrl)
     next()
-  })
-  
+}
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token
+    if (!token) {
+        res.status(401).send({ message: 'unauthorized' })
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized' })
+        }
+        req.user = decoded
+        next()
+    })
+
 }
 
 
@@ -67,23 +65,25 @@ async function run() {
         const CollectionServicesOrder = database.collection("order");
 
         //auth related
-        app.post('/jwt',logger, async (req, res) => {
+        app.post('/jwt', logger, async (req, res) => {
             const user = req.body
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-            res.cookie('token',token,{httpOnly:true,secure:false}).send({success:true})
-            
+            res.cookie('token', token, { httpOnly: true, secure: false }).send({ success: true })
+
         })
 
 
         // Services
-        app.get('/services',logger,verifyToken, async (req, res) => {
-            // console.log('--------->>', req.cookies.token)
-            console.log('from in the valid token',req.user.email)
+        app.get('/services', async (req, res) => {
             const services = await databaseCollection.find().toArray();
             res.json(services)
         })
-        app.get('/orderreviews', async (req, res) => {
-            const result = await CollectionServicesOrder.find().toArray();
+        app.get('/orderreviews/:email', verifyToken, async (req, res) => {
+            const Email = req.params.email
+            if (Email !== req.user.email) {
+                return res.status(403).send({ message: "Forbidden" })
+            }
+            const result = await CollectionServicesOrder.find({ email: Email }).toArray();
             res.send(result)
         })
         app.get('/services/:id', async (req, res) => {
