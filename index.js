@@ -104,6 +104,12 @@ async function run() {
             const services = await databaseCollection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
             res.json(services)
         })
+        app.patch('/orderupdate/:id',async(req,res)=>{
+            const id =req.params.id
+            const quary={_id:new ObjectId(id)}
+            const result=await CollectionServicesOrder.updateOne(quary,{$set: req.body})
+            res.send(result)
+        })
 
         app.delete('/services/:id', async (req, res) => {
             const services = await databaseCollection.deleteOne({ _id: new ObjectId(req.params.id) });
