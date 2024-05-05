@@ -4,6 +4,7 @@ require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const { JsonWebTokenError } = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 const app = express()
 const port = process.env.PORT || 5000
 
@@ -42,7 +43,13 @@ async function run() {
             const user=req.body
             const token=jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1h'})
             console.log(user)
-            res.send(token)
+            res
+            .cookie('token',token,{
+                httpOnly:true,
+                secure:false,
+                sameSite:'none'
+            })
+            .send({success:true})
         })
 
 
